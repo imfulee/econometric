@@ -1,0 +1,142 @@
+---
+title: "Case 2"
+output:
+  pdf_document: default
+  html_notebook: default
+---
+
+# Summary
+
+## Part 1 
+
+- Through stepwise regression, only `Company size` is a significant feature with a p-value of 0.000919 and a beta of 1.4651.
+- This stepwise model has a good fit, as it has an adjusted $R^2$ of 0.7299 and a p-value of 0.0001541.
+- Thsis stepwise model generates the following function
+
+$$
+\text{Size of Purchase (\$1,000s)} = 128.7 + 1.4651 \times \text{Company Size (\$millions sales)} -41.07 \times \text{Similar Products}
+$$
+
+## Part 2
+
+- There seems to be no linear relationship between the dependent variable and independent variable
+- Plotting `Average sales` against `hours worked per week` seems to be heteroscedatic, therefore ruling out the use of OLS
+
+## Part 3
+
+- There is a quadratic relationship between `Sales ($ million)` and `Number of Employees`. 
+- The quadratic model would follow the following model
+
+$$
+\text{Average Sales} = -93.21 + 1.4554 \times \text{No. of employees} + -0.0040 \times \text{No. of employees}^2
+$$
+
+- This quadratic model would be have an Adjusted R-squared of 0.7535 and p-value: 0.003084
+
+\newpage
+
+# Works
+
+Importing various libraries
+```{r message=FALSE, warning=FALSE}
+library(tidyverse)
+library(caret)
+library(leaps)
+library(MASS)
+```
+
+## Part 1
+
+Import the data set and then generate `stepwise regression` model
+
+```{r}
+data_part1 <- read.csv('csv/part1.csv', header = TRUE)
+# Fit the full model 
+full.model_part1 <- lm(Size.of.Purchase...1.000s. ~ ., data=data_part1)
+# Stepwise regression model
+step.model_part1 <- stepAIC(full.model_part1, direction = "both", trace = FALSE)
+summary(step.model_part1)
+```
+
+\newpage
+
+## Part 2
+
+Get the data and divide up the columns of data
+
+```{r}
+data_part2 <- read.csv('csv/part2.csv', header = TRUE)
+# split the data into various columns
+avg_sales <- data_part2$Average.Sales....million.
+hours_work <- data_part2$Hours.Worked.per.Week
+no_customer <- data_part2$Number.of.Customers
+```
+
+Plot the `Average Sales ($ million)` against `Hours Worked per Week`
+
+```{r}
+plot(hours_work, avg_sales,
+     main = "Average sales and hours worked per week",
+     ylab = "Average Sales",
+     xlab = "Hours worked",
+     pch=19)
+```
+
+We see that the data is **heteroscedatic**. Therefore, any method of regression using OLS directly on this set of data would be unfavoured. Then we plot the `Average Sales ($ million)` against `Number of Customers`
+
+```{r}
+plot(no_customer, avg_sales, 
+     main = "Average sales and hours worked per week",
+     ylab = "Average Sales",
+     xlab = "Number of Customers",
+     pch=19)
+```
+
+We see that the data has a possible outlier at (188, 13.8). There seems to be a weak relationship between the `Average Sales ($ million)` and `Number of Customers`. Then, we run a stepwise regression (however unwillingly, as it is unfavourable to run an OLS model with data that is heteroscedatic)
+
+```{r}
+hours_work_sq <- hours_work ^ 2
+no_customer_sq <- no_customer ^ 2 
+full.model_part2 <- lm(avg_sales ~ hours_work + no_customer + hours_work_sq + no_customer_sq)
+step.model_part2 <- stepAIC(full.model_part2, direction = "both", trace = FALSE)
+summary(step.model_part2)
+```
+
+\newpage
+
+## Part 3
+
+Get the data and plot the scatter plot
+
+```{r}
+data_part3 <- read.csv('csv/part3.csv', header = TRUE)
+
+plot(data_part3$Number.of.Employees,
+     data_part3$Sales..............million., 
+     main = "Sales against Number of employees",
+     ylab = "Sales",
+     xlab = "Number of employees", pch=19)
+```
+
+There seems to be a non-linear relationship between `Sales ($ million)` and `Number of Employees`. Therefore we try to do a non-linear regression for it. This looks like a quadratic relationship.
+
+```{r}
+sales <- data_part3$Sales..............million.
+no_employees <- data_part3$Number.of.Employees
+
+
+full.model_part3 <- lm(sales ~ poly(no_employees,2,raw=TRUE))
+summary(full.model_part3)
+```
+
+We would also draw out the final graph for it.
+
+```{r}
+#generate range of 50 numbers starting from 30 and ending at 160
+xx <- seq(110,220, length=50)
+plot(no_employees, sales, pch=19,
+     xlab="Number of Employees",
+     ylab="Sales",
+     ylim=c(20,40))
+lines(xx, predict(full.model_part3, data.frame(no_employees=xx)), col="red")
+```
