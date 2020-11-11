@@ -22,14 +22,15 @@ $$
 ## Part 2
 
 - There seems to be no linear relationship between the dependent variable (`Average sales`) and independent variable (`Hours worked per week` and `Number of Customers`)
-- Plotting `Average sales` against `Hours worked per week` seems to be heteroscedatic, therefore ruling out the use of OLS
-- However oddly, using OLS, we could get a (almost) good fit of p-value of 0.02468 and Adjusted R-squared of 0.968 with the following equation (with *S* as the `Average sales`, *C* as the `Number of Customers`, *H* as the `Hours worked per week`)
+- Plotting `Average sales` against `Hours worked per week` is heteroscedatic, therefore ruling out the use of OLS
+- However oddly, using OLS, we could get a (almost) good fit of p-value of 0.002616 and Adjusted R-squared of 0.9786 with the following equation (with *S* as the `Average sales`, *C* as the `Number of Customers`, *H* as the `Hours worked per week`). But this equation is kind of useless as the RESET test would show these parameters to be invalid.
 
 $$
 \begin{split}
-S = &4.788(10^3) \\
-+ &2.356(10^1) C + 3.654(10^{-4}) C^2 - 6.346(10^{-6}) C^3 \\
-- &3.850(10^2)H + 1.025(10^1) H^2 - 9.038(10^{-2}) H^3 + 5.997(10^{-19}) e^{H}
+S = &4.804(10^3) \\
++ &2.586(10^{-1}) C - 4.999(10^{-6}) C^3 \\
+- &3.863(10^2)H + 1.028(10^1) H^2 - 9.065(10^{-2}) H^3 \\
++ &6.025(10^{-19}) e^{H}
 \end{split}
 $$
 
@@ -85,15 +86,28 @@ no_customer <- data_part2$Number.of.Customers
 
 Plot the `Average Sales ($ million)` against `Hours Worked per Week`
 
-```{r}
+```{r message=FALSE, warning=FALSE}
+library(lmtest)
+library(skedastic)
 plot(hours_work, avg_sales,
      main = "Average sales and hours worked per week",
      ylab = "Average Sales",
      xlab = "Hours worked",
      pch=19)
+sales_hour_model <- lm(data_part2$Average.Sales....million. ~ 
+                         data_part2$Hours.Worked.per.Week)
 ```
 
-We see that the data is **heteroscedatic**. Therefore, any method of regression using OLS directly on this set of data would be unfavoured. Then we plot the `Average Sales ($ million)` against `Number of Customers`
+We see that the data maybe **heteroscedatic** and we would use the [Breusch–Pagan test](https://en.wikipedia.org/wiki/Breusch%E2%80%93Pagan_test) and [White Test](https://en.wikipedia.org/wiki/White_test) to test whether they are actually heteroscedatic.
+
+```{r}
+print(bptest(sales_hour_model, 
+      data_part2$Average.Sales....million.~data_part2$Hours.Worked.per.Week,
+      data=data_part2))
+print(white_lm(sales_hour_model)) 
+```
+
+From the two test, we see that the data is **heteroscedatic**. Therefore, any method of regression using OLS directly on this set of data would be unfavoured. Then we plot the `Average Sales ($ million)` against `Number of Customers`
 
 ```{r}
 plot(no_customer, avg_sales, 
@@ -106,12 +120,42 @@ plot(no_customer, avg_sales,
 We see that the data has a possible outlier at (188, 13.8). There seems to be a weak relationship between the `Average Sales ($ million)` and `Number of Customers`. Then, we run a stepwise regression (however unwillingly, as it is unfavourable to run an OLS model with data that is heteroscedatic)
 
 ```{r}
-full.model_part2 <- lm(avg_sales ~ poly(no_customer,3,raw=TRUE) 
-                       + poly(hours_work,3,raw=TRUE) 
+full.model_part2 <- lm(avg_sales ~ poly(no_customer,3,raw=TRUE) + poly(hours_work,3,raw=TRUE) 
                        + exp(hours_work))
 step.model_part2 <- stepAIC(full.model_part2, direction = "both", trace = FALSE)
 summary(step.model_part2)
 ```
+
+From this, we could see there are various insignificant variables, but oddly, it seems that the `poly()` function has caused the `stepAIC()` function unable to take away values such as $\text{Hours of work} ^ 2$ in the process, therefore we tried to run it with various arrays generated individually. 
+
+```{r}
+no_customer_2 <- no_customer ^ 2
+no_customer_3 <- no_customer ^ 3
+hours_work_2 <- hours_work ^ 2
+hours_work_3 <- hours_work ^ 3
+exp_hours <- exp(hours_work)
+full.model_part2 <- lm(avg_sales ~ 
+                         no_customer + no_customer_2 + no_customer_3 +
+                         hours_work + hours_work_2 + hours_work_3 +
+                         exp_hours)
+step.model_part2 <- stepAIC(full.model_part2, direction = "both", trace = FALSE)
+summary(step.model_part2)
+```
+
+It worked! At least at the face of it, with an Adjusted R-squared of 0.9786 and p-value of 0.002616. Also, the model has none insignificant values, but still we would run a [Ramsey RESET test](https://en.wikipedia.org/wiki/Ramsey_RESET_test) and [VIF](https://en.wikipedia.org/wiki/Variance_inflation_factor)
+
+```{r message=FALSE, warning=FALSE}
+library(car)
+print(vif(step.model_part2))
+```
+
+All the variables with relation to hours of work, has a significantly higher value than the rest of the variables.
+
+```{r}
+print(resettest(step.model_part2))
+```
+
+Our worst fears. The RESET test p-value would indicate that the model has misspecified in the sense that the data generating process might be better approximated by a polynomial or another non-linear functional form. To this point, I am just confused, maybe I wrote the wrong code? 
 
 \newpage
 
