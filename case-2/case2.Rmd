@@ -1,10 +1,10 @@
 ---
 title: "Case 2"
 output:
+  pdf_document: default
+  html_notebook: default
   html_document:
     df_print: paged
-  html_notebook: default
-  pdf_document: default
 ---
 
 # Summary
@@ -21,8 +21,17 @@ $$
 
 ## Part 2
 
-- There seems to be no linear relationship between the dependent variable and independent variable
-- Plotting `Average sales` against `hours worked per week` seems to be heteroscedatic, therefore ruling out the use of OLS
+- There seems to be no linear relationship between the dependent variable (`Average sales`) and independent variable (`Hours worked per week` and `Number of Customers`)
+- Plotting `Average sales` against `Hours worked per week` seems to be heteroscedatic, therefore ruling out the use of OLS
+- However oddly, using OLS, we could get a (almost) good fit of p-value of 0.02468 and Adjusted R-squared of 0.968 with the following equation (with *S* as the `Average sales`, *C* as the `Number of Customers`, *H* as the `Hours worked per week`)
+
+$$
+\begin{split}
+S = &4.788(10^3) \\
++ &2.356(10^1) C + 3.654(10^{-4}) C^2 - 6.346(10^{-6}) C^3 \\
+- &3.850(10^2)H + 1.025(10^1) H^2 - 9.038(10^{-2}) H^3 + 5.997(10^{-19}) e^{H}
+\end{split}
+$$
 
 ## Part 3
 
@@ -97,9 +106,9 @@ plot(no_customer, avg_sales,
 We see that the data has a possible outlier at (188, 13.8). There seems to be a weak relationship between the `Average Sales ($ million)` and `Number of Customers`. Then, we run a stepwise regression (however unwillingly, as it is unfavourable to run an OLS model with data that is heteroscedatic)
 
 ```{r}
-hours_work_sq <- hours_work ^ 2
-no_customer_sq <- no_customer ^ 2 
-full.model_part2 <- lm(avg_sales ~ hours_work + no_customer + hours_work_sq + no_customer_sq)
+full.model_part2 <- lm(avg_sales ~ poly(no_customer,3,raw=TRUE) 
+                       + poly(hours_work,3,raw=TRUE) 
+                       + exp(hours_work))
 step.model_part2 <- stepAIC(full.model_part2, direction = "both", trace = FALSE)
 summary(step.model_part2)
 ```
@@ -142,3 +151,5 @@ plot(no_employees, sales, pch=19,
      ylim=c(20,40))
 lines(xx, predict(full.model_part3, data.frame(no_employees=xx)), col="red")
 ```
+
+
