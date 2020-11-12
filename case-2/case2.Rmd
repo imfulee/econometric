@@ -86,9 +86,7 @@ no_customer <- data_part2$Number.of.Customers
 
 Plot the `Average Sales ($ million)` against `Hours Worked per Week`
 
-```{r message=FALSE, warning=FALSE}
-library(lmtest)
-library(skedastic)
+```{r}
 plot(hours_work, avg_sales,
      main = "Average sales and hours worked per week",
      ylab = "Average Sales",
@@ -100,7 +98,9 @@ sales_hour_model <- lm(data_part2$Average.Sales....million. ~
 
 We see that the data maybe **heteroscedatic** and we would use the [Breusch–Pagan test](https://en.wikipedia.org/wiki/Breusch%E2%80%93Pagan_test) and [White Test](https://en.wikipedia.org/wiki/White_test) to test whether they are actually heteroscedatic.
 
-```{r}
+```{r message=FALSE, warning=FALSE}
+library(lmtest)
+library(skedastic)
 print(bptest(sales_hour_model, 
       data_part2$Average.Sales....million.~data_part2$Hours.Worked.per.Week,
       data=data_part2))
@@ -110,8 +110,8 @@ print(white_lm(sales_hour_model))
 From the two test, we see that the data is **heteroscedatic**. Therefore, any method of regression using OLS directly on this set of data would be unfavoured. Then we plot the `Average Sales ($ million)` against `Number of Customers`
 
 ```{r}
-plot(no_customer, avg_sales, 
-     main = "Average sales and hours worked per week",
+plot(log(no_customer), avg_sales, 
+     main = "Average sales and Number of Customers",
      ylab = "Average Sales",
      xlab = "Number of Customers",
      pch=19)
@@ -121,7 +121,7 @@ We see that the data has a possible outlier at (188, 13.8). There seems to be a 
 
 ```{r}
 full.model_part2 <- lm(avg_sales ~ poly(no_customer,3,raw=TRUE) + poly(hours_work,3,raw=TRUE) 
-                       + exp(hours_work))
+                       + log(hours_work))
 step.model_part2 <- stepAIC(full.model_part2, direction = "both", trace = FALSE)
 summary(step.model_part2)
 ```
@@ -133,11 +133,11 @@ no_customer_2 <- no_customer ^ 2
 no_customer_3 <- no_customer ^ 3
 hours_work_2 <- hours_work ^ 2
 hours_work_3 <- hours_work ^ 3
-exp_hours <- exp(hours_work)
+log_hours <- exp(hours_work)
 full.model_part2 <- lm(avg_sales ~ 
                          no_customer + no_customer_2 + no_customer_3 +
                          hours_work + hours_work_2 + hours_work_3 +
-                         exp_hours)
+                         log_hours)
 step.model_part2 <- stepAIC(full.model_part2, direction = "both", trace = FALSE)
 summary(step.model_part2)
 ```
@@ -155,7 +155,19 @@ All the variables with relation to hours of work, has a significantly higher val
 print(resettest(step.model_part2))
 ```
 
-Our worst fears. The RESET test p-value would indicate that the model has misspecified in the sense that the data generating process might be better approximated by a polynomial or another non-linear functional form. To this point, I am just confused, maybe I wrote the wrong code? 
+Our worst fears. The RESET test p-value would indicate that the model has misspecified in the sense that the data generating process might be better approximated by a polynomial or another non-linear functional form. 
+
+To this point, I recall that a heteroskedatic data samples and the collinearity of the features would actually distort the p-value of the OLS model. Therefore, now we would use a [Lasso Regression](https://en.wikipedia.org/wiki/Lasso_(statistics)) to test for the best fit model.
+
+## Part 2 - Lasso Regression
+
+
+
+```{r}
+
+```
+
+
 
 \newpage
 
