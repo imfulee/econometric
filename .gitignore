@@ -8,3 +8,4 @@ pyvenv.cfg
 env/
 .ipynb_checkpoints/
 *.nb.html
+.vscode
