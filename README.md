@@ -48,3 +48,16 @@ pip3 install -r requirements.txt # Mac
 ```bash
 jupyter-lab
 ```
+
+---
+
+# Usage on R
+
+If you're on Linux, install the following dependencies (list based on `apt`):
+
+- libmpfr-dev
+- libcurl4-openssl-dev 
+- libssl-dev 
+- libxml2-dev
+- r-base-dev
+- r-base
