@@ -1,0 +1,16 @@
+---
+title: "Case 3"
+output: html_notebook
+---
+
+# Pre-processing
+
+converting the data set into a csv file
+
+```{r}
+library(haven)
+convert_src = read_dta('cex5_small.dta')
+write.csv(convert_src, file="cex5_small.csv")
+```
+
+# Part 1
